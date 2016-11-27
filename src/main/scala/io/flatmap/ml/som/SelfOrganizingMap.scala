@@ -8,7 +8,7 @@ class SelfOrganizingMap(width: Int, height: Int, sigma: Double = 0.2, learningRa
 
   type Neuron = (Int, Int)
 
-  val codebook: DenseMatrix[Array[Double]] = DenseMatrix.zeros[Array[Double]](height, width)
+  val codebook: DenseMatrix[Array[Double]] = DenseMatrix.fill[Array[Double]](height, width)(Array.emptyDoubleArray)
 
   def initialize(data: RDD[Vector]): Unit =
     for {
