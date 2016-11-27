@@ -35,4 +35,17 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     som.winner(new DenseVector(Array(0.25, 0.25, 0.25))) should equal ((5, 5))
   }
 
+  "gaussian" should "return a neighborhood matrix with gaussian distributed coefficients" in {
+    val som = new SelfOrganizingMap(7, 7)
+    som.codebook.foreachKey {
+      case (i, j) =>
+        som.codebook(i, j) = breeze.linalg.DenseVector.ones[Double](7).toArray
+    }
+    val gNeighborhood = som.gaussian((3, 3))
+    gNeighborhood(3, 3) should equal (1.0)
+    gNeighborhood(6, 6) should equal (gNeighborhood(0, 0))
+    gNeighborhood(0, 6) should equal (gNeighborhood(0, 0))
+    gNeighborhood(6, 0) should equal (gNeighborhood(0, 0))
+  }
+
 }
