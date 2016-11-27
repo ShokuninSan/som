@@ -1,6 +1,6 @@
 package io.flatmap.ml.som
 
-import breeze.linalg.{DenseMatrix, DenseVector, norm}
+import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 
@@ -16,13 +16,15 @@ class SelfOrganizingMap(width: Int, height: Int, sigma: Double = 0.2, learningRa
       sample <- data.takeSample(withReplacement = true, width * height)
     } yield codebook(index._1, index._2) = sample.toArray
 
-  def winner(point: Vector): Neuron = {
+  def winner(dataPoint: Vector): Neuron = {
     val activationMap = DenseMatrix.zeros[Double](height, width)
-    val subtracted = codebook.copy.mapValues(_.zip(point.toArray).map { case (a,b) => a-b })
-    subtracted.foreachPair { case ((x, y), v) =>
-        activationMap(x, y) = norm(DenseVector(v))
-    }
-    activationMap.argmin
+    codebook
+      .copy
+      .foreachPair {
+        case ((i, j), w) =>
+          activationMap(i, j) = norm(DenseVector(dataPoint.toArray) - DenseVector(w))
+      }
+    argmin(activationMap)
   }
 
 }
