@@ -1,7 +1,7 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
-import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Neuron}
+import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Neuron, Weights}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -9,6 +9,7 @@ import org.apache.spark.sql.SparkSession
 object SelfOrganizingMap {
 
   type Neuron = (Int, Int)
+  type Weights = Array[Double]
   type CodeBook = DenseMatrix[Array[Double]]
 
   def apply(codeBook: CodeBook, sigma: Double, learningRate: Double) = {
@@ -44,6 +45,17 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
     argmin(activationMap)
   }
 
+  private[som] def withUpdatedWeights(block: (Neuron, Weights) => Unit)(implicit codeBook: CodeBook, dataPoint: Vector): ((Int, Int), Double) => Unit = {
+    case ((i, j), h) =>
+      block(
+        (i, j),
+        (DenseVector(codeBook(i, j))
+          + learningRate
+          * h
+          * (DenseVector(dataPoint.toArray)
+          - DenseVector(codeBook(i, j)))).toArray)
+  }
+
   def train[T <: Vector](data: RDD[T], iterations: Int, partitions: Int = 12)(implicit sparkSession: SparkSession): SelfOrganizingMap = {
     var codeBook = this.codeBook.copy
     for (iteration <- 0 until iterations) {
@@ -53,17 +65,13 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
       val randomizedRDD = data.repartition(partitions)
       print(s"iter: $iteration, sigma: $sigma, learningRate: $learningRate")
       def trainPartition = (dataPartition: Iterator[Vector]) => {
-        val localCodeBook = broadcastedCodeBook.value
-        dataPartition.foreach { dataPoint =>
-          val bestMatchingUnit = winner(dataPoint)
-          neighborhood(bestMatchingUnit).foreachPair {
-            case ((i, j), h) =>
-              localCodeBook(i, j) =
-                (DenseVector(localCodeBook(i, j))
-                  + learningRate
-                  * h
-                  * (DenseVector(dataPoint.toArray)
-                    - DenseVector(localCodeBook(i, j)))).toArray
+        implicit val localCodeBook = broadcastedCodeBook.value
+        dataPartition foreach { implicit dataPoint =>
+          neighborhood(winner(dataPoint)) foreachPair {
+            withUpdatedWeights {
+              case ((i, j), weights) =>
+                localCodeBook(i, j) = weights
+            }
           }
         }
         Array(localCodeBook).iterator
