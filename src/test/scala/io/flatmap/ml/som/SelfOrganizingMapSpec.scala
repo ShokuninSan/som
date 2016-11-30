@@ -3,6 +3,7 @@ package io.flatmap.ml.som
 import breeze.linalg.DenseMatrix
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.random.RandomRDDs
+import org.apache.spark.rdd.RDD
 import org.scalatest._
 import util.TestSparkContext
 
@@ -46,6 +47,15 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     gNeighborhood(6, 6) should equal (gNeighborhood(0, 0))
     gNeighborhood(0, 6) should equal (gNeighborhood(0, 0))
     gNeighborhood(6, 0) should equal (gNeighborhood(0, 0))
+  }
+
+  "train" should "return a fitted SOM" in {
+    val som = SelfOrganizingMap(6, 6)
+    val path = getClass.getResource("/rgb.csv").getPath
+    val data = sparkSession.sparkContext.textFile(path).map(_.split(",").map(_.toDouble)).map(new DenseVector(_))
+    som.initialize(data)
+    val newSom = som.train(data, 20)
+    newSom.codeBook should not equal (som.codeBook)
   }
 
 }
