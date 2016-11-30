@@ -3,29 +3,45 @@ package io.flatmap.ml.som
 import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
 import breeze.numerics.{exp, pow}
 import io.flatmap.ml.numerics._
+import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Neuron}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 
-class SelfOrganizingMap(width: Int, height: Int, sigma: Double = 0.2, learningRate: Double = 0.1) extends Serializable {
+object SelfOrganizingMap {
 
   type Neuron = (Int, Int)
 
-  val codebook: DenseMatrix[Array[Double]] = DenseMatrix.fill[Array[Double]](height, width)(Array.emptyDoubleArray)
+  type CodeBook = DenseMatrix[Array[Double]]
+
+  def apply(codeBook: CodeBook, sigma: Double, learningRate: Double) =
+    new SelfOrganizingMap(codeBook, sigma, learningRate)
+
+  def apply(width: Int, height: Int, sigma: Double = 0.2, learningRate: Double = 0.1) =
+    new SelfOrganizingMap(DenseMatrix.fill[Array[Double]](height, width)(Array.emptyDoubleArray), sigma, learningRate)
+
+}
+
+class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val learningRate: Double) extends Serializable {
+
+  private val width = codeBook.cols
+  private val height = codeBook.rows
 
   def initialize(data: RDD[Vector]): Unit =
     for {
-      index <- codebook.keysIterator.toArray
+      (i, j) <- codeBook.keysIterator.toArray
       sample <- data.takeSample(withReplacement = true, width * height)
-    } yield codebook(index._1, index._2) = sample.toArray
+    } yield codeBook(i, j) = sample.toArray
+
+  def decay(coefficient: Double, iteration: Int, maxIterations: Int): Double =
+    coefficient/(1.0+iteration.toDouble)/maxIterations.toDouble
 
   def winner(dataPoint: Vector): Neuron = {
     val activationMap = DenseMatrix.zeros[Double](height, width)
-    codebook
-      .copy
-      .foreachPair {
-        case ((i, j), w) =>
-          activationMap(i, j) = norm(DenseVector(dataPoint.toArray) - DenseVector(w))
-      }
+    codeBook.foreachPair {
+      case ((i, j), w) =>
+        activationMap(i, j) = norm(DenseVector(dataPoint.toArray) - DenseVector(w))
+    }
     argmin(activationMap)
   }
 
