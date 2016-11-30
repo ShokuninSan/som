@@ -2,6 +2,7 @@ package io.flatmap.ml.som
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
 import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Neuron, Weights}
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -56,26 +57,27 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
           - DenseVector(codeBook(i, j)))).toArray)
   }
 
+  private[som] def trainPartition(dataPartition: Iterator[Vector])(implicit broadcast: Broadcast[CodeBook]): Iterator[CodeBook] = {
+    implicit val localCodeBook = broadcast.value
+    dataPartition foreach { implicit dataPoint =>
+      neighborhood(winner(dataPoint)) foreachPair {
+        withUpdatedWeights {
+          case ((i, j), weights) =>
+            localCodeBook(i, j) = weights
+        }
+      }
+    }
+    Array(localCodeBook).iterator
+  }
+
   def train[T <: Vector](data: RDD[T], iterations: Int, partitions: Int = 12)(implicit sparkSession: SparkSession): SelfOrganizingMap = {
     var codeBook = this.codeBook.copy
     for (iteration <- 0 until iterations) {
       val sigma = decay(this.sigma, iteration, iterations)
       val learningRate = decay(this.learningRate, iteration, iterations)
-      val broadcastedCodeBook = sparkSession.sparkContext.broadcast(codeBook)
+      implicit val broadcastedCodeBook = sparkSession.sparkContext.broadcast(codeBook)
       val randomizedRDD = data.repartition(partitions)
       print(s"iter: $iteration, sigma: $sigma, learningRate: $learningRate")
-      def trainPartition = (dataPartition: Iterator[Vector]) => {
-        implicit val localCodeBook = broadcastedCodeBook.value
-        dataPartition foreach { implicit dataPoint =>
-          neighborhood(winner(dataPoint)) foreachPair {
-            withUpdatedWeights {
-              case ((i, j), weights) =>
-                localCodeBook(i, j) = weights
-            }
-          }
-        }
-        Array(localCodeBook).iterator
-      }
       val resultCodeBook = randomizedRDD.mapPartitions(trainPartition)
       val newCodeBook = resultCodeBook.reduce(_ + _)
       newCodeBook.map(v => v.map(_ / partitions.toDouble))
