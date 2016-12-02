@@ -23,7 +23,7 @@ object SelfOrganizingMap {
 
 }
 
-class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val learningRate: Double) extends Serializable with GaussianNeighborboodKernel with CustomDecay {
+class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val learningRate: Double) extends Serializable with GaussianNeighborboodKernel with CustomDecay with QuantizationErrorMetrics {
 
   private val width = codeBook.cols
   private val height = codeBook.rows
@@ -77,7 +77,7 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
       val learningRate = decay(this.learningRate, iteration, iterations)
       implicit val broadcastedCodeBook = sparkSession.sparkContext.broadcast(codeBook)
       val randomizedRDD = data.repartition(partitions)
-      print(s"iter: $iteration, sigma: $sigma, learningRate: $learningRate")
+      print(s"iter: $i, sigma: ${hp.sigma}, learningRate: ${hp.learningRate}, error: ${error(randomizedRDD)}")
       val resultCodeBook = randomizedRDD.mapPartitions(trainPartition)
       val newCodeBook = resultCodeBook.reduce(_ + _)
       newCodeBook.map(v => v.map(_ / partitions.toDouble))
