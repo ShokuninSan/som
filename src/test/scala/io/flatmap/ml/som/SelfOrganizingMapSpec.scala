@@ -23,15 +23,15 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     val som = SelfOrganizingMap(6, 6)
     som.codeBook.keysIterator.foreach { case (x, y) => som.codeBook(x, y) = Array(0.2, 0.2, 0.2) }
     som.codeBook(3, 3) = Array(0.3, 0.3, 0.3)
-    som.winner(new DenseVector(Array(2.0, 2.0, 2.0))) should equal ((3, 3))
-    som.winner(new DenseVector(Array(0.26, 0.26, 0.26))) should equal ((3, 3))
+    som.winner(new DenseVector(Array(2.0, 2.0, 2.0)), som.codeBook) should equal ((3, 3))
+    som.winner(new DenseVector(Array(0.26, 0.26, 0.26)), som.codeBook) should equal ((3, 3))
   }
 
   "winner" should "return last best matching unit (BMU) index in case of multiple BMUs" in {
     val som = SelfOrganizingMap(6, 6)
     som.codeBook.keysIterator.foreach { case (x, y) => som.codeBook(x, y) = Array(0.2, 0.2, 0.2) }
     som.codeBook(3, 3) = Array(0.3, 0.3, 0.3)
-    som.winner(new DenseVector(Array(0.25, 0.25, 0.25))) should equal ((5, 5))
+    som.winner(new DenseVector(Array(0.25, 0.25, 0.25)), som.codeBook) should equal ((5, 5))
   }
 
   "neighborhood" should "return a matrix with gaussian distributed coefficients" in {

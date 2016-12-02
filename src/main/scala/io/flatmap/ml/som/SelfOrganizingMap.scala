@@ -37,7 +37,7 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
     new SelfOrganizingMap(codeBook, sigma, learningRate)
   }
 
-  def winner(dataPoint: Vector): Neuron = {
+  def winner(dataPoint: Vector, codeCook: CodeBook): Neuron = {
     val activationMap = DenseMatrix.zeros[Double](height, width)
     codeBook.foreachPair {
       case ((i, j), w) =>
@@ -60,7 +60,7 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
   private[som] def trainPartition(dataPartition: Iterator[Vector])(implicit broadcast: Broadcast[CodeBook]): Iterator[CodeBook] = {
     implicit val localCodeBook = broadcast.value
     dataPartition foreach { implicit dataPoint =>
-      neighborhood(winner(dataPoint)) foreachPair {
+      neighborhood(winner(dataPoint, localCodeBook)) foreachPair {
         withUpdatedWeights {
           case ((i, j), weights) =>
             localCodeBook(i, j) = weights
