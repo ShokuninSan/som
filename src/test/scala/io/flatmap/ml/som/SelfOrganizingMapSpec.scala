@@ -61,10 +61,10 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
   }
 
   "train" should "return a fitted SOM" in {
-    val som = SelfOrganizingMap(6, 6)
+    val som = SelfOrganizingMap(6, 6, sigma = 0.5, learningRate = 0.3)
     val path = getClass.getResource("/rgb.csv").getPath
-    val data = sparkSession.sparkContext.textFile(path).map(_.split(",").map(_.toDouble)).map(new DenseVector(_))
-    val newSom = som.initialize(data).train(data, 20)
+    val rgb = sparkSession.sparkContext.textFile(path).map(_.split(",").map(_.toDouble)).map(new DenseVector(_))
+    val newSom = som.initialize(rgb).train(rgb, 20)
     newSom.codeBook should not equal som.codeBook
   }
 
