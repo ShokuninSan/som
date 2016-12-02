@@ -70,4 +70,10 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     newSom.codeBook should not equal som.codeBook
   }
 
+  "auxiliary constructor" should "return a SOM with predefined codebook" in {
+    val codeBook = DenseMatrix.fill[Array[Double]](6, 6)(Array.emptyDoubleArray)
+    val som = SelfOrganizingMap(codeBook, sigma = 0.5, learningRate = 0.3)
+    som.codeBook should equal (codeBook)
+  }
+
 }
