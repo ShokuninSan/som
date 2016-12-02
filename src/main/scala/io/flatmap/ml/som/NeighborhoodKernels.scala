@@ -3,11 +3,11 @@ package io.flatmap.ml.som
 import breeze.linalg.{DenseMatrix, DenseVector}
 import breeze.numerics._
 import io.flatmap.ml.numerics._
-import io.flatmap.ml.som.SelfOrganizingMap.Neuron
+import io.flatmap.ml.som.SelfOrganizingMap.{HyperParameters, Neuron}
 
 trait NeighborhoodKernel {
 
-  def neighborhood(winner: Neuron): DenseMatrix[Double]
+  def neighborhood(winner: Neuron)(implicit hp: HyperParameters): DenseMatrix[Double]
 
 }
 
@@ -22,10 +22,10 @@ trait GaussianNeighborboodKernel extends NeighborhoodKernel {
     exp(-(numerator /:/ denominator))
   }
 
-  override def neighborhood(winner: Neuron): DenseMatrix[Double] = {
+  def neighborhood(winner: Neuron)(implicit hp: HyperParameters): DenseMatrix[Double] = {
     // vectors with gaussian distribution of neighborhood coefficients
-    val gaussianX = gaussian(codeBook.cols, winner._1, sigma)
-    val gaussianY = gaussian(codeBook.rows, winner._2, sigma)
+    val gaussianX = gaussian(codeBook.cols, winner._1, hp.sigma)
+    val gaussianY = gaussian(codeBook.rows, winner._2, hp.sigma)
     // return 2 dimensional gaussian dist. surface by creating the outer product
     outer(gaussianX, gaussianY)
   }

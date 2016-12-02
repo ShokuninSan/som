@@ -1,6 +1,7 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.DenseMatrix
+import io.flatmap.ml.som.SelfOrganizingMap.HyperParameters
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.random.RandomRDDs
 import org.scalatest._
@@ -40,6 +41,7 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
       case (i, j) =>
         som.codeBook(i, j) = breeze.linalg.DenseVector.ones[Double](7).toArray
     }
+    implicit val hp = HyperParameters(sigma = som.sigma, learningRate = som.learningRate)
     val gNeighborhood = som.neighborhood((3, 3))
     gNeighborhood(3, 3) should equal (1.0)
     gNeighborhood(6, 6) should equal (gNeighborhood(0, 0))

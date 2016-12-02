@@ -1,7 +1,7 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
-import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Neuron, Weights}
+import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, HyperParameters, Neuron, Weights}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
@@ -12,6 +12,7 @@ object SelfOrganizingMap {
   type Neuron = (Int, Int)
   type Weights = Array[Double]
   type CodeBook = DenseMatrix[Array[Double]]
+  case class HyperParameters(sigma: Double, learningRate: Double)
 
   def apply(codeBook: CodeBook, sigma: Double, learningRate: Double) = {
     new SelfOrganizingMap(codeBook, sigma, learningRate)
@@ -46,18 +47,18 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
     argmin(activationMap)
   }
 
-  private[som] def withUpdatedWeights(block: (Neuron, Weights) => Unit)(implicit codeBook: CodeBook, dataPoint: Vector): ((Int, Int), Double) => Unit = {
+  private[som] def withUpdatedWeights(block: (Neuron, Weights) => Unit)(implicit codeBook: CodeBook, hp: HyperParameters, dataPoint: Vector): ((Int, Int), Double) => Unit = {
     case ((i, j), h) =>
       block(
         (i, j),
         (DenseVector(codeBook(i, j))
-          + learningRate
+          + hp.learningRate
           * h
           * (DenseVector(dataPoint.toArray)
           - DenseVector(codeBook(i, j)))).toArray)
   }
 
-  private[som] def trainPartition(dataPartition: Iterator[Vector])(implicit broadcast: Broadcast[CodeBook]): Iterator[CodeBook] = {
+  private[som] def trainPartition(dataPartition: Iterator[Vector])(implicit broadcast: Broadcast[CodeBook], hp: HyperParameters): Iterator[CodeBook] = {
     implicit val localCodeBook = broadcast.value
     dataPartition foreach { implicit dataPoint =>
       neighborhood(winner(dataPoint, localCodeBook)) foreachPair {
@@ -72,10 +73,11 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
 
   def train[T <: Vector](data: RDD[T], iterations: Int, partitions: Int = 12)(implicit sparkSession: SparkSession): SelfOrganizingMap = {
     var codeBook = this.codeBook.copy
-    for (iteration <- 0 until iterations) {
-      val sigma = decay(this.sigma, iteration, iterations)
-      val learningRate = decay(this.learningRate, iteration, iterations)
-      implicit val broadcastedCodeBook = sparkSession.sparkContext.broadcast(codeBook)
+    implicit var hp = HyperParameters(this.sigma, this.learningRate)
+    for (i <- 0 until iterations) {
+      val d: Double => Double = decay(_, i, iterations)
+      hp = HyperParameters(d(this.sigma), d(this.learningRate))
+      implicit val bc = sparkSession.sparkContext.broadcast(codeBook)
       val randomizedRDD = data.repartition(partitions)
       print(s"iter: $i, sigma: ${hp.sigma}, learningRate: ${hp.learningRate}, error: ${error(randomizedRDD)}")
       val resultCodeBook = randomizedRDD.mapPartitions(trainPartition)
@@ -83,7 +85,7 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
       newCodeBook.map(v => v.map(_ / partitions.toDouble))
       codeBook = newCodeBook
     }
-    new SelfOrganizingMap(codeBook, sigma, learningRate)
+    new SelfOrganizingMap(codeBook, hp.sigma, hp.learningRate)
   }
 
 }
