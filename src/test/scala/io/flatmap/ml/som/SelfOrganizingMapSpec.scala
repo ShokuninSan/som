@@ -1,7 +1,8 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.DenseMatrix
-import io.flatmap.ml.som.SelfOrganizingMap.HyperParameters
+import breeze.numerics.closeTo
+import io.flatmap.ml.som.SelfOrganizingMap.Parameters
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.random.RandomRDDs
 import org.scalatest._
@@ -41,7 +42,7 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
       case (i, j) =>
         som.codeBook(i, j) = breeze.linalg.DenseVector.ones[Double](7).toArray
     }
-    implicit val hp = HyperParameters(sigma = som.sigma, learningRate = som.learningRate)
+    implicit val hp = Parameters(sigma = som.sigma, learningRate = som.learningRate)
     val gNeighborhood = som.neighborhood((3, 3))
     gNeighborhood(3, 3) should equal (1.0)
     gNeighborhood(6, 6) should equal (gNeighborhood(0, 0))
@@ -54,20 +55,24 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     val sigma = 0.5
     val learningRate = 0.3
     val iterations = 20.0
-    val som =
+    val (_, params) =
       SelfOrganizingMap(6, 6, sigma, learningRate)
         .initialize(data)
         .train(data, iterations.toInt)
-    som.sigma should equal (sigma / (1.0 + (iterations - 1.0) / iterations))
-    som.learningRate should equal (learningRate / (1.0 + (iterations - 1.0) / iterations))
+    params.sigma should equal (sigma / (1.0 + (iterations - 1.0) / iterations))
+    params.learningRate should equal (learningRate / (1.0 + (iterations - 1.0) / iterations))
   }
 
-  "train" should "return a fitted SOM" in {
+  "train" should "return a fitted SOM instance" in {
     val som = SelfOrganizingMap(6, 6, sigma = 0.5, learningRate = 0.3)
     val path = getClass.getResource("/rgb.csv").getPath
-    val rgb = sparkSession.sparkContext.textFile(path).map(_.split(",").map(_.toDouble)).map(new DenseVector(_))
-    val newSom = som.initialize(rgb).train(rgb, 20)
+    val rgb = sparkSession.sparkContext
+      .textFile(path)
+      .map(_.split(",").map(_.toDouble / 255.0))
+      .map(new DenseVector(_))
+    val (newSom, params) = som.initialize(rgb).train(rgb, 20)
     newSom.codeBook should not equal som.codeBook
+    assert(closeTo(params.error, 0.15, relDiff = 1e-2))
   }
 
   "auxiliary constructor" should "return a SOM with predefined codebook" in {

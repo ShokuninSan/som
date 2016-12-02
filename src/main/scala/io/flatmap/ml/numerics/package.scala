@@ -2,7 +2,6 @@ package io.flatmap.ml
 
 import breeze.linalg.{*, DenseMatrix, DenseVector}
 import breeze.math.Field
-import breeze.numerics._
 
 import scala.reflect._
 

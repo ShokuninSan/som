@@ -1,7 +1,7 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
-import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, HyperParameters, Neuron, Weights}
+import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Parameters, Neuron, Weights}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
@@ -12,7 +12,8 @@ object SelfOrganizingMap {
   type Neuron = (Int, Int)
   type Weights = Array[Double]
   type CodeBook = DenseMatrix[Array[Double]]
-  case class HyperParameters(sigma: Double, learningRate: Double)
+
+  case class Parameters(sigma: Double, learningRate: Double, error: Double = 0.0)
 
   def apply(codeBook: CodeBook, sigma: Double, learningRate: Double) = {
     new SelfOrganizingMap(codeBook, sigma, learningRate)
@@ -24,7 +25,7 @@ object SelfOrganizingMap {
 
 }
 
-class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val learningRate: Double) extends Serializable with GaussianNeighborboodKernel with CustomDecay with QuantizationErrorMetrics {
+class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val learningRate: Double) extends Serializable with GaussianNeighborboodKernel with CustomDecay with QuantizationErrorMetrics {
 
   private val width = codeBook.cols
   private val height = codeBook.rows
@@ -47,18 +48,18 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
     argmin(activationMap)
   }
 
-  private[som] def withUpdatedWeights(block: (Neuron, Weights) => Unit)(implicit codeBook: CodeBook, hp: HyperParameters, dataPoint: Vector): ((Int, Int), Double) => Unit = {
+  private[som] def withUpdatedWeights(block: (Neuron, Weights) => Unit)(implicit codeBook: CodeBook, p: Parameters, dataPoint: Vector): ((Int, Int), Double) => Unit = {
     case ((i, j), h) =>
       block(
         (i, j),
         (DenseVector(codeBook(i, j))
-          + hp.learningRate
+          + p.learningRate
           * h
           * (DenseVector(dataPoint.toArray)
           - DenseVector(codeBook(i, j)))).toArray)
   }
 
-  private[som] def trainPartition(dataPartition: Iterator[Vector])(implicit broadcast: Broadcast[CodeBook], hp: HyperParameters): Iterator[CodeBook] = {
+  private[som] def trainPartition(dataPartition: Iterator[Vector])(implicit broadcast: Broadcast[CodeBook], p: Parameters): Iterator[CodeBook] = {
     implicit val localCodeBook = broadcast.value
     dataPartition foreach { implicit dataPoint =>
       neighborhood(winner(dataPoint, localCodeBook)) foreachPair {
@@ -71,21 +72,18 @@ class SelfOrganizingMap private (val codeBook: CodeBook, val sigma: Double, val 
     Array(localCodeBook).iterator
   }
 
-  def train[T <: Vector](data: RDD[T], iterations: Int, partitions: Int = 12)(implicit sparkSession: SparkSession): SelfOrganizingMap = {
-    var codeBook = this.codeBook.copy
-    implicit var hp = HyperParameters(this.sigma, this.learningRate)
+  def train[T <: Vector](data: RDD[T], iterations: Int, partitions: Int = 12)(implicit sparkSession: SparkSession): (SelfOrganizingMap, Parameters) = {
+    implicit var params = Parameters(this.sigma, this.learningRate)
     for (i <- 0 until iterations) {
-      val d: Double => Double = decay(_, i, iterations)
-      hp = HyperParameters(d(this.sigma), d(this.learningRate))
-      implicit val bc = sparkSession.sparkContext.broadcast(codeBook)
+      implicit val bc = sparkSession.sparkContext.broadcast(this.codeBook)
       val randomizedRDD = data.repartition(partitions)
-      print(s"iter: $i, sigma: ${hp.sigma}, learningRate: ${hp.learningRate}, error: ${error(randomizedRDD)}")
-      val resultCodeBook = randomizedRDD.mapPartitions(trainPartition)
-      val newCodeBook = resultCodeBook.reduce(_ + _)
-      newCodeBook.map(v => v.map(_ / partitions.toDouble))
-      codeBook = newCodeBook
+      val d: Double => Double = decay(_, i, iterations)
+      params = params.copy(d(this.sigma), d(this.learningRate), error(randomizedRDD))
+      val codeBooks = randomizedRDD.mapPartitions(trainPartition)
+      this.codeBook = codeBooks.reduce(_ + _).map(_.map(_ / partitions.toDouble))
+      print(s"iter: $i, sigma: ${params.sigma}, learningRate: ${params.learningRate}, error: ${params.error}")
     }
-    new SelfOrganizingMap(codeBook, hp.sigma, hp.learningRate)
+    (new SelfOrganizingMap(this.codeBook, this.sigma, this.learningRate), params)
   }
 
 }
