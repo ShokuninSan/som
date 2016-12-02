@@ -47,6 +47,19 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     gNeighborhood(6, 0) should equal (gNeighborhood(0, 0))
   }
 
+  "decay" should "decrease sigma and learningRate to one half each" in {
+    val data = RandomRDDs.normalVectorRDD(sparkSession.sparkContext, numRows = 512L, numCols = 3)
+    val sigma = 0.5
+    val learningRate = 0.3
+    val iterations = 20.0
+    val som =
+      SelfOrganizingMap(6, 6, sigma, learningRate)
+        .initialize(data)
+        .train(data, iterations.toInt)
+    som.sigma should equal (sigma / (1.0 + (iterations - 1.0) / iterations))
+    som.learningRate should equal (learningRate / (1.0 + (iterations - 1.0) / iterations))
+  }
+
   "train" should "return a fitted SOM" in {
     val som = SelfOrganizingMap(6, 6)
     val path = getClass.getResource("/rgb.csv").getPath
