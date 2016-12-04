@@ -16,7 +16,7 @@ val scalatestVersion = "2.2.4"
 
 libraryDependencies ++= Seq(
   "org.scalanlp" % "breeze_2.11" % breezeVersion,
-  "org.scalanlp" % "breeze-viz_2.11" % breezeVersion,
+  "org.scalanlp" % "breeze-viz_2.11" % breezeVersion % "test",
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided"
