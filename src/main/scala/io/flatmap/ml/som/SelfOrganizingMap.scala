@@ -39,7 +39,7 @@ class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val 
     new SelfOrganizingMap(codeBook, sigma, learningRate)
   }
 
-  def winner(dataPoint: Vector, codeCook: CodeBook): Neuron = {
+  private[som] def winner(dataPoint: Vector, codeCook: CodeBook): Neuron = {
     val activationMap = DenseMatrix.zeros[Double](height, width)
     codeBook.foreachPair {
       case ((i, j), w) =>
