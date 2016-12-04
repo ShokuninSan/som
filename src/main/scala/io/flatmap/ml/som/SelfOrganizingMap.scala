@@ -83,7 +83,7 @@ class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val 
       this.codeBook = codeBooks.reduce(_ + _).map(_.map(_ / partitions.toDouble))
       print(s"iter: $i, sigma: ${params.sigma}, learningRate: ${params.learningRate}, error: ${params.error}")
     }
-    (new SelfOrganizingMap(this.codeBook, this.sigma, this.learningRate), params)
+    (new SelfOrganizingMap(this.codeBook.copy, this.sigma, this.learningRate), params)
   }
 
 }
