@@ -6,7 +6,7 @@ import io.flatmap.ml.som.SelfOrganizingMap.Parameters
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.random.RandomRDDs
 import org.scalatest._
-import util.TestSparkContext
+import util.{Plot, TestSparkContext}
 
 class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEach with TestSparkContext {
 
@@ -64,14 +64,17 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
   }
 
   "train" should "return a fitted SOM instance" in {
-    val som = SelfOrganizingMap(6, 6, sigma = 0.5, learningRate = 0.3)
     val path = getClass.getResource("/rgb.csv").getPath
     val rgb = sparkSession.sparkContext
       .textFile(path)
       .map(_.split(",").map(_.toDouble / 255.0))
       .map(new DenseVector(_))
-    val (newSom, params) = som.initialize(rgb).train(rgb, 20)
-    newSom.codeBook should not equal som.codeBook
+    val som = SelfOrganizingMap(6, 6, sigma = 0.5, learningRate = 0.3).initialize(rgb)
+    val initialCodeBook = som.codeBook.copy
+    Plot.rgb("Initial SOM", som.codeBook, "initial_som.png")
+    val (newSom, params) = som.train(rgb, 20)
+    Plot.rgb("Trained SOM", newSom.codeBook, "trained_som.png")
+    newSom.codeBook should not equal initialCodeBook
     assert(closeTo(params.error, 0.15, relDiff = 1e-2))
   }
 
