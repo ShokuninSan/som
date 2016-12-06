@@ -19,7 +19,7 @@ trait GaussianNeighborboodKernel extends NeighborhoodKernel {
     val initDistributions = DenseVector.range(0, size) - mean
     val numerator = pow(initDistributions, 2).map(_.toDouble)
     val denominator = 2*math.Pi*sigma*sigma
-    exp(-(numerator /:/ denominator))
+    exp(-(numerator :/ denominator))
   }
 
   def neighborhood(winner: Neuron)(implicit p: Parameters): DenseMatrix[Double] = {
