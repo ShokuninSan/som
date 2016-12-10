@@ -1,6 +1,7 @@
 *.class
 *.log
 *.png
+.DS_Store
 
 # sbt specific
 .cache
