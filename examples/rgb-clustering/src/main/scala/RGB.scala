@@ -1,3 +1,5 @@
+package example
+
 import java.awt.Color
 
 import breeze.plot._
@@ -7,7 +9,6 @@ import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.sql.SparkSession
 
 import scala.util.Try
-
 
 object RGB {
 
@@ -28,16 +29,15 @@ object RGB {
         .builder
         .appName("rgb-clustering")
         .getOrCreate()
-    val path = "data/rgb.csv"
     val rgb = sparkSession.sparkContext
-      .textFile(path)
+      .textFile("data/rgb.csv")
       .map(_.split(",").map(_.toDouble / 255.0))
       .map(new DenseVector(_))
     val (som, params) =
-      SelfOrganizingMap(6, 6, sigma = 0.5, learningRate = 0.3)
+      SelfOrganizingMap(24, 24, sigma = 0.5, learningRate = 0.3)
         .initialize(rgb)
         .train(rgb, 20)
-    plot("Trained SOM", som.codeBook, "trained_som.png")
+    plot(f"Trained SOM (error=${params.error}%1.4f)", som.codeBook, "trained_som.png")
   }
 
 }
