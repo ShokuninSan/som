@@ -1,12 +1,15 @@
 package io.flatmap.ml.som
 
+import java.awt.Color
+
 import breeze.linalg.DenseMatrix
 import breeze.numerics.closeTo
 import io.flatmap.ml.som.SelfOrganizingMap.Parameters
+import io.flatmap.ml.util.Plot
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.random.RandomRDDs
 import org.scalatest._
-import util.{Plot, TestSparkContext}
+import util.TestSparkContext
 
 class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEach with TestSparkContext {
 
@@ -71,9 +74,14 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
       .map(new DenseVector(_))
     val som = SelfOrganizingMap(6, 6, sigma = 0.5, learningRate = 0.3).initialize(rgb)
     val initialCodeBook = som.codeBook.copy
-    Plot.rgb("Initial SOM", som.codeBook, "initial_som.png")
+    val codeBookVectorToRGB: List[Double] => Double = {
+      case red :: green :: blue :: Nil =>
+        new Color((red*255.0).toInt, (green*255.0).toInt, (blue*255.0).toInt).getRGB.toDouble
+      case _ => Color.white.getRGB.toDouble
+    }
+    Plot.som("Initial SOM", som.codeBook, "initial_som.png")(codeBookVectorToRGB)
     val (newSom, params) = som.train(rgb, 20)
-    Plot.rgb("Trained SOM", newSom.codeBook, "trained_som.png")
+    Plot.som(f"Trained SOM (error=${params.error}%1.4f)", newSom.codeBook, "trained_som.png")(codeBookVectorToRGB)
     newSom.codeBook should not equal initialCodeBook
     assert(closeTo(params.error, 0.15, relDiff = 1e-2))
   }
