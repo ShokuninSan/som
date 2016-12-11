@@ -81,9 +81,10 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     }
     Plot.som("Initial SOM", som.codeBook, "initial_som.png")(codeBookVectorToRGB)
     val (newSom, params) = som.train(rgb, 20)
-    Plot.som(f"Trained SOM (error=${params.error}%1.4f)", newSom.codeBook, "trained_som.png")(codeBookVectorToRGB)
+    Plot.som(f"Trained SOM (error=${params.errors.head}%1.4f)", newSom.codeBook, "trained_som.png")(codeBookVectorToRGB)
+    Plot.errors(params.errors.reverse)
     newSom.codeBook should not equal initialCodeBook
-    assert(closeTo(params.error, 0.15, relDiff = 1e-2))
+    assert(closeTo(params.errors.head, 0.15, relDiff = 1e-2))
   }
 
   "auxiliary constructor" should "return a SOM with predefined codebook" in {
