@@ -78,9 +78,9 @@ class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val 
       implicit val bc = sparkSession.sparkContext.broadcast(this.codeBook)
       val randomizedRDD = data.repartition(partitions)
       val d: Double => Double = decay(_, i, iterations)
-      params = params.copy(d(this.sigma), d(this.learningRate), error(randomizedRDD) :: params.errors)
       val codeBooks = randomizedRDD.mapPartitions(trainPartition)
       this.codeBook = codeBooks.reduce(_ + _).map(_.map(_ / partitions.toDouble))
+      params = params.copy(d(this.sigma), d(this.learningRate), error(randomizedRDD) :: params.errors)
       print(s"iter: $i, sigma: ${params.sigma}, learningRate: ${params.learningRate}, error: ${params.errors.head}")
     }
     (new SelfOrganizingMap(this.codeBook.copy, this.sigma, this.learningRate), params)
