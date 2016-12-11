@@ -12,6 +12,26 @@ $ spark-submit \
 --class example.RGB \
 target/scala-2.11/rgb-clustering-assembly-0.1.0.jar
 ```
+Note: to reduce verbosity of Spark logging add the following lines to your `$SPARK_HOME/conf/log4j.properties` file:
+```
+log4j.rootCategory=INFO, console
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.target=System.err
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
+
+# Spark related settings
+log4j.logger.org.apache.spark=WARN
+log4j.logger.org.spark_project.jetty=WARN
+log4j.logger.org.spark_project.jetty.util.component.AbstractLifeCycle=ERROR
+log4j.logger.org.apache.parquet=ERROR
+log4j.logger.parquet=ERROR
+log4j.logger.org.apache.hadoop.hive.metastore.RetryingHMSHandler=FATAL
+log4j.logger.org.apache.hadoop.hive.ql.exec.FunctionRegistry=ERROR
+
+# Settings for the SOM library
+slf4j.logger.io.flatmap.ml.som.SelfOrganizingMap=INFO
+```
 
 ## Run application on Amazon EC2
 
