@@ -1,11 +1,12 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
-import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Parameters, Neuron, Weights}
+import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Neuron, Parameters, Weights}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
+import org.slf4j.LoggerFactory
 
 object SelfOrganizingMap {
 
@@ -29,6 +30,8 @@ class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val 
 
   private val width = codeBook.cols
   private val height = codeBook.rows
+
+  private val logger = LoggerFactory.getLogger(classOf[SelfOrganizingMap])
 
   def initialize[T <: Vector](data: RDD[T]): SelfOrganizingMap = {
     val codeBook = this.codeBook.copy
@@ -81,7 +84,7 @@ class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val 
       val codeBooks = randomizedRDD.mapPartitions(trainPartition)
       this.codeBook = codeBooks.reduce(_ + _).map(_.map(_ / partitions.toDouble))
       params = params.copy(d(this.sigma), d(this.learningRate), error(randomizedRDD) :: params.errors)
-      print(s"iter: $i, sigma: ${params.sigma}, learningRate: ${params.learningRate}, error: ${params.errors.head}")
+      logger.info(f"iter: $i, sigma: ${params.sigma}%1.4f, learningRate: ${params.learningRate}%1.4f, error: ${params.errors.head}%1.4f")
     }
     (new SelfOrganizingMap(this.codeBook.copy, this.sigma, this.learningRate), params)
   }
