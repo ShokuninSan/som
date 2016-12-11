@@ -10,7 +10,7 @@ $ spark-submit \
 --name 'RGB clustering application' \
 --files data/rgb.csv \
 --class example.RGB \
-target/scala-2.11/rgb-clustering-assembly-1.0.0.jar
+target/scala-2.11/rgb-clustering-assembly-0.1.0.jar
 ```
 
 ## Run application on Amazon EC2
@@ -28,7 +28,7 @@ $ spark-submit \
 --name 'RGB clustering application' \
 --files data/rgb.csv \
 --class example.RGB \
-target/scala-2.11/rgb-clustering-assembly-1.0.0.jar
+target/scala-2.11/rgb-clustering-assembly-0.1.0.jar
 ```
 
 ### Start/stop cluster
@@ -38,4 +38,4 @@ target/scala-2.11/rgb-clustering-assembly-1.0.0.jar
 `spark-ec2 --key-pair=somclusterkeys --identity-file=somclusterkeys.pem --region=eu-west-1 login som-cluster`
 
 ### Copy files manually to master node
-`scp -i somclusterkeys.pem data/rgb.csv target/scala-2.11/rgb-clustering-assembly-1.0.0.jar root@ec2-xx-xxx-xx-xx.eu-west-1.compute.amazonaws.com:`
+`scp -i somclusterkeys.pem data/rgb.csv target/scala-2.11/rgb-clustering-assembly-0.1.0.jar root@ec2-xx-xxx-xx-xx.eu-west-1.compute.amazonaws.com:`
