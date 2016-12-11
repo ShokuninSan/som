@@ -23,7 +23,8 @@ object RGB {
       SelfOrganizingMap(24, 24, sigma = 0.5, learningRate = 0.3)
         .initialize(rgb)
         .train(rgb, 20)
-    Plot.som(f"Trained SOM (error=${params.error}%1.4f)", som.codeBook, "trained_som.png") {
+    Plot.errors(params.errors.reverse)
+    Plot.som(f"Trained SOM (error=${params.errors.head}%1.4f)", som.codeBook, "trained_som.png") {
       case red :: green :: blue :: Nil =>
         new Color((red*255.0).toInt, (green*255.0).toInt, (blue*255.0).toInt).getRGB.toDouble
       case _ => Color.white.getRGB.toDouble
