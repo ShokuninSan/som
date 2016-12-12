@@ -44,7 +44,6 @@ Note: Make sure that your master accepts inbound TCP connections from your publi
 ```
 $ spark-submit \
 --master spark://ec2-xx-xxx-xx-xxx.eu-west-1.compute.amazonaws.com:7077 \
---deploy-mode cluster \
 --name 'RGB clustering application' \
 --files data/rgb.csv \
 --class example.RGB \
