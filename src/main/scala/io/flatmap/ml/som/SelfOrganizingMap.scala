@@ -1,6 +1,7 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
+import io.flatmap.ml.macros.{Benchmark, debug}
 import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Neuron, Parameters, Weights}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.mllib.linalg.Vector
@@ -75,6 +76,7 @@ class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val 
     Array(localCodeBook).iterator
   }
 
+//  @Benchmark
   def train[T <: Vector](data: RDD[T], iterations: Int, partitions: Int = 12)(implicit sparkSession: SparkSession): (SelfOrganizingMap, Parameters) = {
     implicit var params = Parameters(this.sigma, this.learningRate)
     for (i <- 0 until iterations) {
