@@ -7,8 +7,15 @@ val slf4jVersion = "1.7.21"
 val scalametaVersion = "1.1.0"
 val scalametaParadiseVersion = "3.0.0-M5"
 
-lazy val somSettings = Seq(
+lazy val commonSettings = Seq(
   organization := "io.flatmap.ml",
+  scalaVersion := "2.11.8",
+  scalacOptions += "-Xplugin-require:macroparadise",
+  resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+  addCompilerPlugin("org.scalameta" % "paradise" % scalametaParadiseVersion cross CrossVersion.full)
+)
+
+lazy val somSettings = Seq(
   version := "0.1.0-SNAPSHOT",
   libraryDependencies ++= Seq(
     "org.scalanlp" % "breeze-viz_2.11" % breezeVersion,
@@ -16,14 +23,11 @@ lazy val somSettings = Seq(
     "org.scalatest" %% "scalatest" % scalatestVersion % "test",
     "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided"
-  )
-)
-
-lazy val commonSettings = Seq(
-  scalaVersion := "2.11.8",
-  scalacOptions += "-Xplugin-require:macroparadise",
-  resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-  addCompilerPlugin("org.scalameta" % "paradise" % scalametaParadiseVersion cross CrossVersion.full)
+  ),
+  // include the macro classes and resources in the main jar
+  mappings in (Compile, packageBin) ++= mappings.in(macros, Compile, packageBin).value,
+  // include the macro sources in the main source jar
+  mappings in (Compile, packageSrc) ++= mappings.in(macros, Compile, packageSrc).value
 )
 
 lazy val macros = (project in file("macros"))
