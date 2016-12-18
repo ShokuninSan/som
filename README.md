@@ -2,7 +2,7 @@
 
 A simple Self Organizing Map for Scala and Apache Spark.
 
-## Build and publish the `som` library locally
+## Build and publish the SOM library locally
 ```
 ➜  som git:(master) ✗ sbt
 ...
