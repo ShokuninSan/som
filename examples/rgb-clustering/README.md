@@ -1,7 +1,32 @@
 # RGB clustering example
 
-## Build assembly JAR
-`$ sbt assembly`
+## Build and publish the SOM library locally
+```
+➜  som git:(master) ✗ sbt
+...
+> publishLocal
+...
+> project macros
+...
+> publishLocal
+...
+[success] Total time: 10 s, completed Dec 18, 2016 4:02:19 PM
+>
+```
+
+## Build assembly JAR for RGB sample application
+```
+➜  rgb-clustering git:(master) ✗ sbt
+...
+> assembly
+...
+[info] Including: som-macros_2.11-0.1.0-SNAPSHOT.jar
+[info] Including: som_2.11-0.1.0-SNAPSHOT.jar
+...
+[info] Done packaging.
+[success] Total time: 137 s, completed Dec 18, 2016 4:05:14 PM
+>
+```
 
 ## Run application on local standalone cluster
 ```
