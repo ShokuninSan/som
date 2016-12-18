@@ -34,5 +34,6 @@ val (som, params) =
     .initialize(rgb)
     .train(rgb, 20)
 ```
+You can find complete applications using the SOM library in the `examples` directory.
 
-Parts of the implementation are inspired by the [spark-som](https://github.com/PragmaticLab/spark-som) project provided by @jxieeducation / PragmaticLab.
+Some parts of the implementation are inspired by the [spark-som](https://github.com/PragmaticLab/spark-som) project. Credits to @jxieeducation / PragmaticLab.
