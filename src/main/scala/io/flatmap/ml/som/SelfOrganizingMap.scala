@@ -1,7 +1,6 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
-import io.flatmap.ml.macros.{Benchmark, debug}
 import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Neuron, Parameters, Weights}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.mllib.linalg.Vector
@@ -17,30 +16,25 @@ object SelfOrganizingMap {
 
   case class Parameters(sigma: Double, learningRate: Double, errors: List[Double] = Nil)
 
-  def apply(codeBook: CodeBook, sigma: Double, learningRate: Double) = {
-    new SelfOrganizingMap(codeBook, sigma, learningRate)
-  }
-
-  def apply(width: Int, height: Int, sigma: Double = 0.2, learningRate: Double = 0.1) = {
-    new SelfOrganizingMap(DenseMatrix.fill[Array[Double]](height, width)(Array.emptyDoubleArray), sigma, learningRate)
-  }
-
 }
 
-class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val learningRate: Double) extends Serializable with GaussianNeighborboodKernel with CustomDecay with QuantizationErrorMetrics {
+trait SelfOrganizingMap extends Serializable { self: NeighborhoodKernel with DecayFunction with Metrics =>
 
-  private val width = codeBook.cols
-  private val height = codeBook.rows
+  var codeBook: CodeBook
+  val sigma: Double
+  val learningRate: Double
 
-  private val logger = LoggerFactory.getLogger(classOf[SelfOrganizingMap])
+  private lazy val width = codeBook.cols
+  private lazy val height = codeBook.rows
+
+  private lazy val logger = LoggerFactory.getLogger(getClass)
 
   def initialize[T <: Vector](data: RDD[T]): SelfOrganizingMap = {
-    val codeBook = this.codeBook.copy
     for {
       (i, j) <- codeBook.keysIterator.toArray
       sample <- data.takeSample(withReplacement = true, width * height)
     } yield codeBook(i, j) = sample.toArray
-    new SelfOrganizingMap(codeBook, sigma, learningRate)
+    this
   }
 
   private[som] def winner(dataPoint: Vector, codeCook: CodeBook): Neuron = {
@@ -76,7 +70,6 @@ class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val 
     Array(localCodeBook).iterator
   }
 
-//  @Benchmark
   def train[T <: Vector](data: RDD[T], iterations: Int, partitions: Int = 12)(implicit sparkSession: SparkSession): (SelfOrganizingMap, Parameters) = {
     implicit var params = Parameters(this.sigma, this.learningRate)
     for (i <- 0 until iterations) {
@@ -88,7 +81,7 @@ class SelfOrganizingMap private (var codeBook: CodeBook, val sigma: Double, val 
       params = params.copy(d(this.sigma), d(this.learningRate), error(randomizedRDD) :: params.errors)
       logger.info(f"iter: $i, sigma: ${params.sigma}%1.4f, learningRate: ${params.learningRate}%1.4f, error: ${params.errors.head}%1.4f")
     }
-    (new SelfOrganizingMap(this.codeBook.copy, this.sigma, this.learningRate), params)
+    (this, params)
   }
 
 }
