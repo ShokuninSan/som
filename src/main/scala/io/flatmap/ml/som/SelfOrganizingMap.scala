@@ -33,7 +33,7 @@ trait SelfOrganizingMap extends Serializable { self: NeighborhoodKernel with Dec
       (i, j) <- codeBook.keysIterator.toArray
       sample <- data.takeSample(withReplacement = true, width * height)
     } yield codeBook(i, j) = sample.toArray
-    this
+    self
   }
 
   private[som] def winner(dataPoint: Vector, codeCook: CodeBook): Neuron = {
@@ -70,17 +70,17 @@ trait SelfOrganizingMap extends Serializable { self: NeighborhoodKernel with Dec
   }
 
   def train[T <: Vector](data: RDD[T], iterations: Int, partitions: Int = 12)(implicit sparkSession: SparkSession): (SelfOrganizingMap, Parameters) = {
-    implicit var params = Parameters(this.sigma, this.learningRate)
+    implicit var params = Parameters(sigma, learningRate)
     for (i <- 0 until iterations) {
-      implicit val bc = sparkSession.sparkContext.broadcast(this.codeBook)
+      implicit val bc = sparkSession.sparkContext.broadcast(codeBook)
       val randomizedRDD = data.repartition(partitions)
       val d: Double => Double = decay(_, i, iterations)
       val codeBooks = randomizedRDD.mapPartitions(trainPartition)
-      this.codeBook := codeBooks.reduce(_ + _).map(_.map(_ / partitions.toDouble))
-      params = params.copy(d(this.sigma), d(this.learningRate), error(randomizedRDD) :: params.errors)
+      codeBook := codeBooks.reduce(_ + _).map(_.map(_ / partitions.toDouble))
+      params = params.copy(d(sigma), d(learningRate), error(randomizedRDD) :: params.errors)
       logger.info(f"iter: $i, sigma: ${params.sigma}%1.4f, learningRate: ${params.learningRate}%1.4f, error: ${params.errors.head}%1.4f")
     }
-    (this, params)
+    (self, params)
   }
 
 }
