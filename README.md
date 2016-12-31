@@ -17,23 +17,28 @@ A simple Self Organizing Map for Scala and Apache Spark.
 ```
 
 ## Usage example
+Make sure you have an implicit `SparkSession` and your data RDD ready.
 ```scala
-implicit val sparkSession =
-  SparkSession
-    .builder
-    .appName("rgb-clustering")
-    .getOrCreate()
+implicit val sparkSession = ???
 
-val rgb = sparkSession.sparkContext
-  .textFile("data/rgb.csv")
-  .map(_.split(",").map(_.toDouble / 255.0))
-  .map(new DenseVector(_))
-
-val (som, params) =
-  SelfOrganizingMap(24, 24, sigma = 0.5, learningRate = 0.3)
-    .initialize(rgb)
-    .train(rgb, 20)
+val data: RDD[Vector] = ???
 ```
-You can find complete applications using the SOM library in the `examples` directory.
+Compose your own SOM instance, with either predefined or custom implementations of decay functions, neighborhood kernels or error metrics... 
+```scala
+val SOM = new SelfOrganizingMap with CustomDecay with GaussianNeighborboodKernel with QuantizationErrorMetrics {
+    override val learningRate: Double = 0.3
+    override val sigma: Double = 0.5
+    override var codeBook: CodeBook = DenseMatrix.fill[Array[Double]](24, 24)(Array.emptyDoubleArray)
+  }
+```
+... or just use an off-the-shelf SOM for your convenience.
+```scala
+val SOM = GaussianSelfOrganizingMap(24, 24, sigma = 0.5, learningRate = 0.3)
+```
+Initialization and training:
+```scala
+val (som, params) = SOM.initialize(data).train(data, 20)
+```
+You can find more examples using the SOM library in the tests and complete applications in the `examples` directory.
 
 Some parts of the implementation are inspired by the [spark-som](https://github.com/PragmaticLab/spark-som) project. Credits to @jxieeducation / PragmaticLab.
