@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 /** Companion object for trait [[io.flatmap.ml.som.SelfOrganizingMap]]
   *
-  * This object holds types related to the [[io.flatmap.ml.som.SelfOrganizingMap trait.
+  * This object holds types related to the [[io.flatmap.ml.som.SelfOrganizingMap]] trait.
   */
 object SelfOrganizingMap {
 
