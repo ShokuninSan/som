@@ -2,21 +2,7 @@
 
 A simple Self Organizing Map for Scala and Apache Spark.
 
-## Build and publish the SOM library locally
-```
-➜  som git:(master) ✗ sbt
-...
-> publishLocal
-...
-> project macros
-...
-> publishLocal
-...
-[success] Total time: 10 s, completed Dec 18, 2016 4:02:19 PM
->
-```
-
-## Usage example
+## Usage
 Make sure you have an implicit `SparkSession` and your data RDD ready.
 ```scala
 implicit val sparkSession = ???
@@ -40,5 +26,19 @@ Initialization and training:
 val (som, params) = SOM.initialize(data).train(data, 20)
 ```
 You can find more examples using the SOM library in the tests and complete applications in the `examples` directory.
+
+## Build and publish the SOM library locally
+```
+➜  som git:(master) ✗ sbt
+...
+> publishLocal
+...
+> project macros
+...
+> publishLocal
+...
+[success] Total time: 10 s, completed Dec 18, 2016 4:02:19 PM
+>
+```
 
 Some parts of the implementation are inspired by the [spark-som](https://github.com/PragmaticLab/spark-som) project. Credits to @jxieeducation / PragmaticLab.
