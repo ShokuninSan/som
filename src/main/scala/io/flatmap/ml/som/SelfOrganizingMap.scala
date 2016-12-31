@@ -1,7 +1,7 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmin, norm}
-import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Neuron, Parameters, Weights}
+import io.flatmap.ml.som.SelfOrganizingMap._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
@@ -14,30 +14,37 @@ object SelfOrganizingMap {
   type Weights = Array[Double]
   type CodeBook = DenseMatrix[Array[Double]]
 
+  case class Shape(width: Int, height: Int)
+
+  object Shape {
+
+    implicit def tupleToShape(t: (Int, Int)): Shape = Shape(t._1, t._2)
+
+  }
+
   case class Parameters(sigma: Double, learningRate: Double, errors: List[Double] = Nil)
 
 }
 
 trait SelfOrganizingMap extends Serializable { self: NeighborhoodKernel with DecayFunction with Metrics =>
 
-  val width: Int
-  val height: Int
+  val shape: Shape
   val sigma: Double
   val learningRate: Double
 
-  private[som] lazy val codeBook: CodeBook = DenseMatrix.fill[Array[Double]](height, width)(Array.emptyDoubleArray)
+  private[som] lazy val codeBook = DenseMatrix.fill[Array[Double]](shape.height, shape.width)(Array.emptyDoubleArray)
   private lazy val logger = LoggerFactory.getLogger(getClass)
 
   def initialize[T <: Vector](data: RDD[T]): SelfOrganizingMap = {
     for {
       (i, j) <- codeBook.keysIterator.toArray
-      sample <- data.takeSample(withReplacement = true, width * height)
+      sample <- data.takeSample(withReplacement = true, shape.width * shape.height)
     } yield codeBook(i, j) = sample.toArray
     self
   }
 
   private[som] def winner(dataPoint: Vector, codeCook: CodeBook): Neuron = {
-    val activationMap = DenseMatrix.zeros[Double](height, width)
+    val activationMap = DenseMatrix.zeros[Double](shape.height, shape.width)
     codeBook.foreachPair {
       case ((i, j), w) =>
         activationMap(i, j) = norm(DenseVector(dataPoint.toArray) - DenseVector(w))

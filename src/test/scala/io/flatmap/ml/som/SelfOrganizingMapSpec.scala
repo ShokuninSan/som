@@ -1,6 +1,7 @@
 package io.flatmap.ml.som
 
 import breeze.linalg.DenseMatrix
+import io.flatmap.ml.som.SelfOrganizingMap.Shape
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.random.RandomRDDs
 import org.scalatest._
@@ -8,10 +9,9 @@ import util.{FakeDecayFunction, FakeMetrics, FakeNeighborhoodKernel, TestSparkCo
 
 class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEach with TestSparkContext {
 
-  def SOM(_width: Int, _height: Int) =
+  def SOM(width: Int, height: Int) =
     new SelfOrganizingMap with FakeNeighborhoodKernel with FakeDecayFunction with FakeMetrics {
-      override val width: Int = _width
-      override val height: Int = _height
+      override val shape: Shape = (width, height)
       override val learningRate: Double = 0.1
       override val sigma: Double = 0.2
     }

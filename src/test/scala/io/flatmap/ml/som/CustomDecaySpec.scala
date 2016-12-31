@@ -1,15 +1,15 @@
 package io.flatmap.ml.som
 
+import io.flatmap.ml.som.SelfOrganizingMap.Shape
 import org.apache.spark.mllib.random.RandomRDDs
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import util.TestSparkContext
 
 class CustomDecaySpec extends FlatSpec with Matchers with BeforeAndAfterEach with TestSparkContext {
 
-  def SOM(_width: Int, _height: Int, _sigma: Double, _learningRate: Double) =
+  def SOM(width: Int, height: Int, _sigma: Double, _learningRate: Double) =
     new SelfOrganizingMap with CustomDecay with GaussianNeighborboodKernel with QuantizationErrorMetrics {
-      override val width: Int = _width
-      override val height: Int = _height
+      override val shape: Shape = (width, height)
       override val learningRate: Double = _learningRate
       override val sigma: Double = _sigma
     }

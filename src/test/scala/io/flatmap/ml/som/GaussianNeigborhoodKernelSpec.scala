@@ -1,15 +1,14 @@
 package io.flatmap.ml.som
 
-import io.flatmap.ml.som.SelfOrganizingMap.Parameters
+import io.flatmap.ml.som.SelfOrganizingMap.{Parameters, Shape}
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import util.{FakeDecayFunction, FakeMetrics, TestSparkContext}
 
 class GaussianNeigborhoodKernelSpec extends FlatSpec with Matchers with BeforeAndAfterEach with TestSparkContext {
 
-  def SOM(_width: Int, _height: Int) =
+  def SOM(width: Int, height: Int) =
     new SelfOrganizingMap with GaussianNeighborboodKernel with FakeDecayFunction with FakeMetrics {
-      override val width: Int = _width
-      override val height: Int = _height
+      override val shape: Shape = (width, height)
       override val learningRate: Double = 0.1
       override val sigma: Double = 0.2
     }
