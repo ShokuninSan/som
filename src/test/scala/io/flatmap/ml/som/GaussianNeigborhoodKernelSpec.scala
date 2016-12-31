@@ -1,17 +1,17 @@
 package io.flatmap.ml.som
 
-import breeze.linalg.DenseMatrix
-import io.flatmap.ml.som.SelfOrganizingMap.{CodeBook, Parameters}
+import io.flatmap.ml.som.SelfOrganizingMap.Parameters
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import util.{FakeDecayFunction, FakeMetrics, TestSparkContext}
 
 class GaussianNeigborhoodKernelSpec extends FlatSpec with Matchers with BeforeAndAfterEach with TestSparkContext {
 
-  def SOM(width: Int, height: Int) =
+  def SOM(_width: Int, _height: Int) =
     new SelfOrganizingMap with GaussianNeighborboodKernel with FakeDecayFunction with FakeMetrics {
+      override val width: Int = _width
+      override val height: Int = _height
       override val learningRate: Double = 0.1
       override val sigma: Double = 0.2
-      override var codeBook: CodeBook = DenseMatrix.fill[Array[Double]](height, width)(Array.emptyDoubleArray)
     }
 
   "neighborhood" should "return a matrix with gaussian distributed coefficients" in {

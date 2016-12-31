@@ -20,13 +20,12 @@ object SelfOrganizingMap {
 
 trait SelfOrganizingMap extends Serializable { self: NeighborhoodKernel with DecayFunction with Metrics =>
 
-  var codeBook: CodeBook
+  val width: Int
+  val height: Int
   val sigma: Double
   val learningRate: Double
 
-  private lazy val width = codeBook.cols
-  private lazy val height = codeBook.rows
-
+  private[som] lazy val codeBook: CodeBook = DenseMatrix.fill[Array[Double]](height, width)(Array.emptyDoubleArray)
   private lazy val logger = LoggerFactory.getLogger(getClass)
 
   def initialize[T <: Vector](data: RDD[T]): SelfOrganizingMap = {
@@ -77,7 +76,7 @@ trait SelfOrganizingMap extends Serializable { self: NeighborhoodKernel with Dec
       val randomizedRDD = data.repartition(partitions)
       val d: Double => Double = decay(_, i, iterations)
       val codeBooks = randomizedRDD.mapPartitions(trainPartition)
-      this.codeBook = codeBooks.reduce(_ + _).map(_.map(_ / partitions.toDouble))
+      this.codeBook := codeBooks.reduce(_ + _).map(_.map(_ / partitions.toDouble))
       params = params.copy(d(this.sigma), d(this.learningRate), error(randomizedRDD) :: params.errors)
       logger.info(f"iter: $i, sigma: ${params.sigma}%1.4f, learningRate: ${params.learningRate}%1.4f, error: ${params.errors.head}%1.4f")
     }

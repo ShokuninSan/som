@@ -18,7 +18,7 @@ class GaussianSelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAn
       .textFile(path)
       .map(_.split(",").map(_.toDouble / 255.0))
       .map(new DenseVector(_))
-    val som = GaussianSelfOrganizingMap(6, 6, sigma = 0.5, learningRate = 0.3).initialize(rgb)
+    val som = GaussianSelfOrganizingMap(6, 6, _sigma = 0.5, _learningRate = 0.3).initialize(rgb)
     val initialCodeBook = som.codeBook.copy
     val codeBookVectorToRGB: List[Double] => Double = {
       case red :: green :: blue :: Nil =>
@@ -31,12 +31,6 @@ class GaussianSelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAn
     Plot.errors(params.errors.reverse)
     newSom.codeBook should not equal initialCodeBook
     assert(closeTo(params.errors.head, 0.15, relDiff = 1e-2))
-  }
-
-  "auxiliary constructor" should "return a SOM with predefined codebook" in {
-    val codeBook = DenseMatrix.fill[Array[Double]](6, 6)(Array.emptyDoubleArray)
-    val som = GaussianSelfOrganizingMap(codeBook, sigma = 0.5, learningRate = 0.3)
-    som.codeBook should equal (codeBook)
   }
 
 }

@@ -1,18 +1,17 @@
 package io.flatmap.ml.som
 
-import breeze.linalg.DenseMatrix
-import io.flatmap.ml.som.SelfOrganizingMap.CodeBook
 import org.apache.spark.mllib.random.RandomRDDs
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import util.TestSparkContext
 
 class CustomDecaySpec extends FlatSpec with Matchers with BeforeAndAfterEach with TestSparkContext {
 
-  def SOM(width: Int, height: Int, sg: Double, lr: Double) =
+  def SOM(_width: Int, _height: Int, _sigma: Double, _learningRate: Double) =
     new SelfOrganizingMap with CustomDecay with GaussianNeighborboodKernel with QuantizationErrorMetrics {
-      override val learningRate: Double = lr
-      override val sigma: Double = sg
-      override var codeBook: CodeBook = DenseMatrix.fill[Array[Double]](height, width)(Array.emptyDoubleArray)
+      override val width: Int = _width
+      override val height: Int = _height
+      override val learningRate: Double = _learningRate
+      override val sigma: Double = _sigma
     }
 
   "decay" should "decrease sigma and learningRate to one half each" in {

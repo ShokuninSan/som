@@ -12,9 +12,10 @@ val data: RDD[Vector] = ???
 Compose your own SOM instance, with either predefined or custom implementations of decay functions, neighborhood kernels or error metrics... 
 ```scala
 val SOM = new SelfOrganizingMap with CustomDecay with GaussianNeighborboodKernel with QuantizationErrorMetrics {
+    override val width: Int = 24
+    override val height: Int = 24
     override val learningRate: Double = 0.3
     override val sigma: Double = 0.5
-    override var codeBook: CodeBook = DenseMatrix.fill[Array[Double]](24, 24)(Array.emptyDoubleArray)
   }
 ```
 ... or just use an off-the-shelf SOM for your convenience.
