@@ -6,7 +6,6 @@ A simple Self Organizing Map for Scala and Apache Spark.
 Make sure you have an implicit `SparkSession` and your data RDD ready.
 ```scala
 implicit val sparkSession = ???
-
 val data: RDD[Vector] = ???
 ```
 Compose your own SOM instance, with either predefined or custom implementations of decay functions, neighborhood kernels or error metrics... 
