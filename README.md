@@ -25,6 +25,12 @@ Initialization and training:
 ```scala
 val (som, params) = SOM.initialize(data).train(data, 20)
 ```
+Classification of datapoints:
+```scala
+val dataPoint: DenseVector = ???
+val (bmu, distance) = som.classify(dataPoint)
+```
+
 You can find more examples using the SOM library in the tests and complete applications in the `examples` directory.
 
 ## Build and publish the SOM library locally
