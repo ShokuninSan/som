@@ -17,6 +17,7 @@ object SelfOrganizingMap {
   type Neuron = (Int, Int)
   type Weights = Array[Double]
   type CodeBook = DenseMatrix[Array[Double]]
+  type Distance = Double
 
   case class Shape(width: Int, height: Int)
 
@@ -170,6 +171,19 @@ trait SelfOrganizingMap extends Serializable { self: NeighborhoodKernel with Dec
       logger.info(f"iter: $i, sigma: ${params.sigma}%1.4f, learningRate: ${params.learningRate}%1.4f, error: ${params.errors.head}%1.4f")
     }
     (self, params)
+  }
+
+  /** Classifies the given datapoint
+    *
+    * This method searches for the best matching unit (BMU) and computes the Euclidean distance.
+    *
+    * @tparam T a subtype of [[org.apache.spark.mllib.linalg.Vector]]
+    * @param dataPoint a [[org.apache.spark.mllib.linalg.Vector]] representing the actual datapoint
+    * @return a tuple with best matching unit (BMU) and the Euclidean distance to the given datapoint
+    */
+  def classify[T <: Vector](dataPoint: T): (Neuron, Distance) = {
+    val bmu = winner(dataPoint, codeBook)
+    (bmu, norm(DenseVector(codeBook(bmu)) - DenseVector(dataPoint.toArray)))
   }
 
 }

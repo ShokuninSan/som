@@ -1,5 +1,6 @@
 package io.flatmap.ml.som
 
+import breeze.numerics.closeTo
 import breeze.linalg.DenseMatrix
 import io.flatmap.ml.som.SelfOrganizingMap.Shape
 import org.apache.spark.mllib.linalg.DenseVector
@@ -40,6 +41,15 @@ class SelfOrganizingMapSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     som.codeBook.keysIterator.foreach { case (x, y) => som.codeBook(x, y) = Array(0.2, 0.2, 0.2) }
     som.codeBook(3, 3) = Array(0.3, 0.3, 0.3)
     som.winner(new DenseVector(Array(0.25, 0.25, 0.25)), som.codeBook) should equal ((5, 5))
+  }
+
+  "classify" should "return the best matching unit along with Euclidean distance" in {
+    val som = SOM(6, 6)
+    som.codeBook.keysIterator.foreach { case (x, y) => som.codeBook(x, y) = Array(0.2, 0.2, 0.2) }
+    som.codeBook(3, 3) = Array(0.3, 0.3, 0.3)
+    val (bmu, distance) = som.classify(new DenseVector(Array(0.26, 0.26, 0.26)))
+    bmu should === ((3, 3))
+    assert(closeTo(distance, 0.06, relDiff = 1e-2))
   }
 
 }
